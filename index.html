@@ -1,561 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CGL Mock Leaderboard</title>
-  
-  <!-- Include Font Awesome for icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Include jsPDF for PDF export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <!-- Include PapaParse for CSV export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-
-  <style>
-    :root {
-      --primary: #4361ee;
-      --secondary: #3f37c9;
-      --accent: #4895ef;
-      --light: #f8f9fa;
-      --dark: #212529;
-      --success: #4cc9f0;
-      --danger: #f72585;
-      --warning: #f8961e;
-      --info: #43aa8b;
-    }
-    
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    
-    body {
-      background-color: #f5f7fa;
-      color: var(--dark);
-      line-height: 1.6;
-      padding: 20px;
-    }
-    
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    
-    h1, h2, h3 {
-      color: var(--primary);
-      margin-bottom: 20px;
-    }
-    
-    h1 {
-      text-align: center;
-      margin: 30px 0;
-      font-size: 2.5rem;
-      background: linear-gradient(90deg, var(--primary), var(--accent));
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-    
-    .card {
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      padding: 25px;
-      margin-bottom: 30px;
-    }
-    
-    .form-group {
-      margin-bottom: 15px;
-    }
-    
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: 600;
-      color: var(--secondary);
-    }
-    
-    input, select {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      font-size: 16px;
-      transition: border 0.3s;
-    }
-    
-    input:focus, select:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
-    }
-    
-    .form-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-    }
-    
-    .form-row .form-group {
-      flex: 1;
-      min-width: 200px;
-    }
-    
-    button {
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: 600;
-      transition: all 0.3s;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    button:hover {
-      background-color: var(--secondary);
-      transform: translateY(-2px);
-    }
-    
-    button.secondary {
-      background-color: var(--light);
-      color: var(--dark);
-      border: 1px solid #ddd;
-    }
-    
-    button.secondary:hover {
-      background-color: #e9ecef;
-    }
-    
-    .btn-group {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 20px 0;
-      overflow-x: auto;
-      display: block;
-    }
-    
-    th, td {
-      padding: 12px 15px;
-      text-align: left;
-      border-bottom: 1px solid #ddd;
-    }
-    
-    th {
-      background-color: var(--primary);
-      color: white;
-      font-weight: 600;
-    }
-    
-    tr:nth-child(even) {
-      background-color: #f8f9fa;
-    }
-    
-    tr:hover {
-      background-color: #e9ecef;
-    }
-    
-    .filter-section {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      align-items: flex-end;
-      margin-bottom: 20px;
-    }
-    
-    .filter-group {
-      flex: 1;
-      min-width: 200px;
-    }
-    
-    .badge {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      background-color: var(--accent);
-      color: white;
-    }
-    
-    .maths { background-color: #f72585; }
-    .english { background-color: #4cc9f0; }
-    .reasoning { background-color: #4895ef; }
-    .gk { background-color: #43aa8b; }
-    .total { background-color: #3f37c9; }
-    
-    @media (max-width: 768px) {
-      .form-row .form-group {
-        flex: 100%;
-      }
-      
-      .filter-group {
-        flex: 100%;
-      }
-      
-      h1 {
-        font-size: 2rem;
-      }
-    }
-    
-    .spinner {
-      display: none;
-      width: 40px;
-      height: 40px;
-      border: 4px solid rgba(0, 0, 0, 0.1);
-      border-radius: 50%;
-      border-top-color: var(--primary);
-      animation: spin 1s ease-in-out infinite;
-      margin: 20px auto;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fadeOut {
-      from { opacity: 1; transform: translateY(0); }
-      to { opacity: 0; transform: translateY(20px); }
-    }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CGL Mock Test Tracker</title>
 </head>
 <body>
-  <div class="container">
-    <h1>
-      <i class="fas fa-trophy"></i> CGL Mock Test Leaderboard
-    </h1>
-    
-    <div class="card">
-      <h2><i class="fas fa-plus-circle"></i> Add New Test Result</h2>
-      <form id="mockForm">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="name">Student Name</label>
-            <input type="text" id="name" name="name" placeholder="Enter student name" required />
-          </div>
-          <div class="form-group">
-            <label for="testName">Test Name</label>
-            <input type="text" id="testName" name="testName" placeholder="e.g., Mock Test 1" required />
-          </div>
-          <div class="form-group">
-            <label for="testDate">Test Date</label>
-            <input type="date" id="testDate" name="testDate" required />
-          </div>
-        </div>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label for="maths">Maths <span class="badge maths">M</span></label>
-            <input type="number" id="maths" name="maths" placeholder="Enter maths score" min="0" required />
-          </div>
-          <div class="form-group">
-            <label for="english">English <span class="badge english">E</span></label>
-            <input type="number" id="english" name="english" placeholder="Enter english score" min="0" required />
-          </div>
-          <div class="form-group">
-            <label for="reasoning">Reasoning <span class="badge reasoning">R</span></label>
-            <input type="number" id="reasoning" name="reasoning" placeholder="Enter reasoning score" min="0" required />
-          </div>
-          <div class="form-group">
-            <label for="gk">GK <span class="badge gk">GK</span></label>
-            <input type="number" id="gk" name="gk" placeholder="Enter GK score" min="0" required />
-          </div>
-        </div>
-        
-        <button type="submit">
-          <i class="fas fa-paper-plane"></i> Submit Results
-        </button>
-      </form>
-    </div>
-    
-    <div class="card">
-      <h2><i class="fas fa-filter"></i> Filter Results</h2>
-      <div class="filter-section">
-        <div class="filter-group">
-          <label for="testDateFilter">Test Date</label>
-          <input type="date" id="testDateFilter">
-        </div>
-        <div class="filter-group">
-          <label for="testNameFilter">Test Name</label>
-          <input type="text" id="testNameFilter" placeholder="e.g., Mock Test 1" />
-        </div>
-        <div class="btn-group">
-          <button id="filterBtn">
-            <i class="fas fa-search"></i> Filter
-          </button>
-          <button id="clearBtn" class="secondary">
-            <i class="fas fa-undo"></i> Clear
-          </button>
-        </div>
-      </div>
-      
-      <div class="btn-group">
-        <button onclick="exportCSV()">
-          <i class="fas fa-file-csv"></i> Export CSV
-        </button>
-        <button onclick="exportPDF()">
-          <i class="fas fa-file-pdf"></i> Export PDF
-        </button>
-      </div>
-      
-      <div id="loadingSpinner" class="spinner"></div>
-      
-      <h2><i class="fas fa-list-ol"></i> Leaderboard</h2>
-      <div style="overflow-x: auto;">
-        <table>
-          <thead id="leaderboard"></thead>
-        </table>
-      </div>
-    </div>
-  </div>
+  <h1>CGL Mock Test Entry</h1>
 
+  <form id="marksForm">
+    <input type="text" id="name" placeholder="Your Name" required><br>
+    <input type="number" id="maths" placeholder="Maths Marks" required><br>
+    <input type="number" id="english" placeholder="English Marks" required><br>
+    <input type="number" id="reasoning" placeholder="Reasoning Marks" required><br>
+    <input type="number" id="gk" placeholder="GK Marks" required><br>
+    <button type="submit">Submit</button>
+  </form>
+
+  <h2>Leaderboard</h2>
+  <table border="1" id="leaderboard">
+    <thead>
+      <tr>
+        <th>Name</th><th>Total</th><th>Maths</th><th>English</th><th>Reasoning</th><th>GK</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <!-- Firebase SDKs -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    // Import Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDJPCpAZWgGLbE7Rsh4NaIPDPwNXNkaDlQ",
-      authDomain: "scorecard-93031.firebaseapp.com",
-      projectId: "scorecard-93031",
-      storageBucket: "scorecard-93031.appspot.com",
-      messagingSenderId: "397775062722",
-      appId: "1:397775062722:web:929072a4ab23f6ed87dd5b",
-      measurementId: "G-69BF1TLDYG"
-    };
+    // Replace these with your own Firebase project config
+   const firebaseConfig = {
+  apiKey: "AIzaSyDJPCpAZWgGLbE7Rsh4NaIPDPwNXNkaDlQ",
+  authDomain: "scorecard-93031.firebaseapp.com",
+  databaseURL: "https://scorecard-93031-default-rtdb.firebaseio.com",
+  projectId: "scorecard-93031",
+  storageBucket: "scorecard-93031.firebasestorage.app",
+  messagingSenderId: "397775062722",
+  appId: "1:397775062722:web:929072a4ab23f6ed87dd5b",
+  measurementId: "G-69BF1TLDYG"
+};
 
+
+    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const form = document.getElementById('mockForm');
-    const leaderboard = document.getElementById('leaderboard');
-    const filterBtn = document.getElementById('filterBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const testDateFilter = document.getElementById('testDateFilter');
-    const testNameFilter = document.getElementById('testNameFilter');
-    const loadingSpinner = document.getElementById('loadingSpinner');
+    const db = getDatabase(app);
 
-    // Date formatter for "Date Month Year" (e.g., "22 April 2025")
-    const dateFormatter = new Intl.DateTimeFormat('en-GB', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-
-    form.addEventListener("submit", async (e) => {
+    // Handle form submission
+    const form = document.getElementById("marksForm");
+    form.addEventListener("submit", (e) => {
       e.preventDefault();
-      const name = form.name.value;
-      const testName = form.testName.value;
-      const testDate = form.testDate.value;
+
+      const name = form.name.value.trim();
       const maths = +form.maths.value;
       const english = +form.english.value;
       const reasoning = +form.reasoning.value;
       const gk = +form.gk.value;
       const total = maths + english + reasoning + gk;
-      const timestamp = new Date().getTime();
 
-      try {
-        await addDoc(collection(db, 'mockTests'), {
-          name, 
-          testName, 
-          testDate, 
-          maths, 
-          english, 
-          reasoning, 
-          gk, 
-          total, 
-          timestamp
-        });
-        form.reset();
-        showToast('Result submitted successfully!', 'success');
-      } catch (error) {
-        showToast('Error submitting result: ' + error.message, 'error');
-      }
+      const scoresRef = ref(db, "scores");
+      push(scoresRef, { name, maths, english, reasoning, gk, total });
+
+      form.reset();
     });
 
-    let unsubscribe = null; // To store the Firestore listener
+    // Display leaderboard
+    const tableBody = document.querySelector("#leaderboard tbody");
+    const scoresRef = ref(db, "scores");
 
-    function loadLeaderboard(testDate = null, testName = null) {
-      // Clear previous listener if it exists
-      if (unsubscribe) {
-        unsubscribe();
+    onValue(scoresRef, (snapshot) => {
+      const data = snapshot.val();
+      const scores = [];
+
+      for (let id in data) {
+        scores.push(data[id]);
       }
 
-      // Show loading spinner
-      loadingSpinner.style.display = 'block';
+      scores.sort((a, b) => b.total - a.total);
 
-      // Set up Firestore query
-      let q = query(collection(db, 'mockTests'), orderBy('total', 'desc'));
-      
-      // Apply testDate filter
-      if (testDate) {
-        q = query(q, where('testDate', '==', testDate));
-      }
-
-      // Set up real-time listener
-      unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const tests = [];
-        querySnapshot.forEach((doc) => {
-          tests.push(doc.data());
-        });
-
-        // Apply client-side filtering for testName (Firestore doesn't support contains)
-        const filteredTests = testName 
-          ? tests.filter(test => test.testName.toLowerCase().includes(testName.toLowerCase()))
-          : tests;
-
-        // Update leaderboard
-        leaderboard.innerHTML = "<tr><th>Rank</th><th>Name</th><th>Test Name</th><th>Test Date</th><th>Maths</th><th>English</th><th>Reasoning</th><th>GK</th><th>Total</th></tr>";
-        
-        let rank = 1;
-        filteredTests.forEach((d) => {
-          const formattedDate = d.testDate ? dateFormatter.format(new Date(d.testDate)) : '';
-          leaderboard.innerHTML += `<tr>
-            <td>${rank++}</td>
-            <td>${d.name}</td>
-            <td>${d.testName || ''}</td>
-            <td>${formattedDate}</td>
-            <td>${d.maths}</td>
-            <td>${d.english}</td>
-            <td>${d.reasoning}</td>
-            <td>${d.gk}</td>
-            <td>${d.total}</td>
-          </tr>`;
-        });
-
-        // Hide loading spinner
-        loadingSpinner.style.display = 'none';
-      }, (error) => {
-        showToast('Error loading leaderboard: ' + error.message, 'error');
-        loadingSpinner.style.display = 'none';
+      tableBody.innerHTML = "";
+      scores.forEach((user) => {
+        const row = `
+          <tr>
+            <td>${user.name}</td>
+            <td>${user.total}</td>
+            <td>${user.maths}</td>
+            <td>${user.english}</td>
+            <td>${user.reasoning}</td>
+            <td>${user.gk}</td>
+          </tr>
+        `;
+        tableBody.innerHTML += row;
       });
-    }
-
-    filterBtn.addEventListener('click', () => {
-      const testDate = testDateFilter.value;
-      const testName = testNameFilter.value;
-      loadLeaderboard(testDate, testName);
     });
-
-    clearBtn.addEventListener('click', () => {
-      testDateFilter.value = '';
-      testNameFilter.value = '';
-      loadLeaderboard();
-    });
-
-    function exportCSV() {
-      const data = [];
-      document.querySelectorAll("#leaderboard tr").forEach(row => {
-        const rowData = [];
-        row.querySelectorAll("td,th").forEach(cell => {
-          rowData.push(cell.innerText);
-        });
-        if (rowData.length) data.push(rowData);
-      });
-
-      const csv = Papa.unparse(data);
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'cgl_leaderboard.csv';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-      }, 100);
-      
-      showToast('CSV exported successfully!', 'success');
-    }
-
-    function exportPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const title = "CGL Mock Test Leaderboard";
-      const date = new Date().toLocaleDateString();
-      
-      doc.setFontSize(18);
-      doc.setTextColor(67, 97, 238);
-      doc.text(title, 105, 20, { align: 'center' });
-      
-      doc.setFontSize(12);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Generated on: ${date}`, 105, 30, { align: 'center' });
-      
-      doc.autoTable({
-        html: '#leaderboard',
-        startY: 40,
-        theme: 'grid',
-        headStyles: {
-          fillColor: [67, 97, 238],
-          textColor: 255,
-          fontStyle: 'bold'
-        },
-        alternateRowStyles: {
-          fillColor: [245, 247, 250]
-        },
-        styles: {
-          cellPadding: 5,
-          fontSize: 10,
-          overflow: 'linebreak'
-        }
-      });
-      
-      doc.save('cgl_leaderboard.pdf');
-      showToast('PDF exported successfully!', 'success');
-    }
-    
-    function showToast(message, type = 'info') {
-      const toast = document.createElement('div');
-      toast.style.position = 'fixed';
-      toast.style.bottom = '20px';
-      toast.style.right = '20px';
-      toast.style.padding = '12px 24px';
-      toast.style.borderRadius = '4px';
-      toast.style.color = 'white';
-      toast.style.fontWeight = '600';
-      toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-      toast.style.zIndex = '1000';
-      toast.style.animation = 'fadeIn 0.3s, fadeOut 0.3s 2.7s';
-      
-      switch(type) {
-        case 'success':
-          toast.style.backgroundColor = '#43aa8b';
-          break;
-        case 'error':
-          toast.style.backgroundColor = '#f72585';
-          break;
-        default:
-          toast.style.backgroundColor = '#4361ee';
-      }
-      
-      toast.textContent = message;
-      document.body.appendChild(toast);
-      
-      setTimeout(() => {
-        document.body.removeChild(toast);
-      }, 3000);
-    }
-
-    loadLeaderboard();
   </script>
 </body>
 </html>
