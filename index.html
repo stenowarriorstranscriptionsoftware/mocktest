@@ -330,7 +330,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDJPCpAZWgGLbE7Rsh4NaIPDPwNXNkaDlQ",
@@ -350,6 +350,7 @@
     const clearBtn = document.getElementById('clearBtn');
     const testDateFilter = document.getElementById('testDateFilter');
     const testNameFilter = document.getElementById('testNameFilter');
+    const loadingSpinner = document.getElementById('loadingSpinner');
 
     // Date formatter for "Date Month Year" (e.g., "22 April 2025")
     const dateFormatter = new Intl.DateTimeFormat('en-GB', {
@@ -384,37 +385,45 @@
         });
         form.reset();
         showToast('Result submitted successfully!', 'success');
-        loadLeaderboard();
       } catch (error) {
         showToast('Error submitting result: ' + error.message, 'error');
       }
     });
 
-    async function loadLeaderboard(testDate = null, testName = null) {
-      leaderboard.innerHTML = "<tr><th>Rank</th><th>Name</th><th>Test Name</th><th>Test Date</th><th>Maths</th><th>English</th><th>Reasoning</th><th>GK</th><th>Total</th></tr>";
+    let unsubscribe = null; // To store the Firestore listener
 
-      try {
-        let q = query(collection(db, 'mockTests'), orderBy('total', 'desc'));
-        
-        // Apply filters
-        if (testDate) {
-          q = query(q, where('testDate', '==', testDate));
-        }
-        if (testName) {
-          // Firestore doesn't support partial string matching, so we'll filter client-side
-        }
+    function loadLeaderboard(testDate = null, testName = null) {
+      // Clear previous listener if it exists
+      if (unsubscribe) {
+        unsubscribe();
+      }
 
-        const querySnapshot = await getDocs(q);
+      // Show loading spinner
+      loadingSpinner.style.display = 'block';
+
+      // Set up Firestore query
+      let q = query(collection(db, 'mockTests'), orderBy('total', 'desc'));
+      
+      // Apply testDate filter
+      if (testDate) {
+        q = query(q, where('testDate', '==', testDate));
+      }
+
+      // Set up real-time listener
+      unsubscribe = onSnapshot(q, (querySnapshot) => {
         const tests = [];
         querySnapshot.forEach((doc) => {
           tests.push(doc.data());
         });
 
-        // Apply client-side filtering for testName (since Firestore doesn't support contains)
+        // Apply client-side filtering for testName (Firestore doesn't support contains)
         const filteredTests = testName 
           ? tests.filter(test => test.testName.toLowerCase().includes(testName.toLowerCase()))
           : tests;
 
+        // Update leaderboard
+        leaderboard.innerHTML = "<tr><th>Rank</th><th>Name</th><th>Test Name</th><th>Test Date</th><th>Maths</th><th>English</th><th>Reasoning</th><th>GK</th><th>Total</th></tr>";
+        
         let rank = 1;
         filteredTests.forEach((d) => {
           const formattedDate = d.testDate ? dateFormatter.format(new Date(d.testDate)) : '';
@@ -430,9 +439,13 @@
             <td>${d.total}</td>
           </tr>`;
         });
-      } catch (error) {
+
+        // Hide loading spinner
+        loadingSpinner.style.display = 'none';
+      }, (error) => {
         showToast('Error loading leaderboard: ' + error.message, 'error');
-      }
+        loadingSpinner.style.display = 'none';
+      });
     }
 
     filterBtn.addEventListener('click', () => {
