@@ -4,40 +4,69 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CGL Mock Test Tracker</title>
-  <style>
-    table, th, td { border: 1px solid black; border-collapse: collapse; padding: 5px; }
-    input, button { margin: 4px 0; }
-  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h1>CGL Mock Test Entry</h1>
+<body class="bg-gray-100 text-gray-800">
+  <div class="max-w-5xl mx-auto p-6">
+    <h1 class="text-3xl font-bold text-center mb-8">📊 CGL Mock Test Tracker</h1>
 
-  <form id="marksForm">
-    <input type="text" id="name" placeholder="Your Name" required><br>
-    <input type="number" id="maths" placeholder="Maths Marks" required><br>
-    <input type="number" id="english" placeholder="English Marks" required><br>
-    <input type="number" id="reasoning" placeholder="Reasoning Marks" required><br>
-    <input type="number" id="gk" placeholder="GK Marks" required><br>
-    <button type="submit">Submit</button>
-  </form>
+    <!-- Form Section -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+      <h2 class="text-xl font-semibold mb-4">Enter Your Test Marks</h2>
+      <form id="marksForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input type="text" id="name" placeholder="Your Name" required class="input-style">
+        <input type="number" id="maths" placeholder="Maths Marks" required class="input-style">
+        <input type="number" id="english" placeholder="English Marks" required class="input-style">
+        <input type="number" id="reasoning" placeholder="Reasoning Marks" required class="input-style">
+        <input type="number" id="gk" placeholder="GK Marks" required class="input-style">
+        <button type="submit" class="col-span-1 md:col-span-2 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">Submit</button>
+      </form>
+    </div>
 
-  <h2>Filter Leaderboard</h2>
-  <input type="date" id="filterDate">
-  <input type="text" id="filterName" placeholder="Filter by Name">
-  <button id="applyFilter">Apply Filter</button>
-  <button id="clearFilter">Clear</button>
+    <!-- Filter Section -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+      <h2 class="text-xl font-semibold mb-4">Filter Leaderboard</h2>
+      <div class="flex flex-col md:flex-row gap-4 items-center">
+        <input type="date" id="filterDate" class="input-style w-full md:w-auto">
+        <input type="text" id="filterName" placeholder="Filter by Name" class="input-style w-full md:w-auto">
+        <button id="applyFilter" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">Apply Filter</button>
+        <button id="clearFilter" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition">Clear</button>
+      </div>
+    </div>
 
-  <h2>Leaderboard</h2>
-  <table id="leaderboard">
-    <thead>
-      <tr>
-        <th>Rank</th><th>Name</th><th>Total</th><th>Maths</th><th>English</th><th>Reasoning</th><th>GK</th><th>Date</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+    <!-- Leaderboard Section -->
+    <div class="bg-white rounded-xl shadow-md p-6">
+      <h2 class="text-xl font-semibold mb-4">Leaderboard</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-left">
+          <thead class="bg-gray-200 text-gray-700">
+            <tr>
+              <th class="py-2 px-3">Rank</th>
+              <th class="py-2 px-3">Name</th>
+              <th class="py-2 px-3">Total</th>
+              <th class="py-2 px-3">Maths</th>
+              <th class="py-2 px-3">English</th>
+              <th class="py-2 px-3">Reasoning</th>
+              <th class="py-2 px-3">GK</th>
+              <th class="py-2 px-3">Date</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard" class="bg-white divide-y divide-gray-200"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
-  <!-- Firebase SDK -->
+  <style>
+    .input-style {
+      border: 1px solid #ccc;
+      border-radius: 0.5rem;
+      padding: 0.5rem;
+      width: 100%;
+    }
+  </style>
+
+  <!-- Firebase Script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
     import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
@@ -58,7 +87,7 @@
     const scoresRef = ref(db, "scores");
 
     const form = document.getElementById("marksForm");
-    const tableBody = document.querySelector("#leaderboard tbody");
+    const tableBody = document.getElementById("leaderboard");
     const filterDate = document.getElementById("filterDate");
     const filterName = document.getElementById("filterName");
     const applyFilter = document.getElementById("applyFilter");
@@ -68,7 +97,6 @@
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-
       const name = form.name.value.trim();
       const maths = +form.maths.value;
       const english = +form.english.value;
@@ -98,17 +126,16 @@
 
       scores.forEach((user, index) => {
         const row = `
-          <tr>
-            <td>${index + 1}</td>
-            <td>${user.name}</td>
-            <td>${user.total}</td>
-            <td>${user.maths}</td>
-            <td>${user.english}</td>
-            <td>${user.reasoning}</td>
-            <td>${user.gk}</td>
-            <td>${user.date || "N/A"}</td>
-          </tr>
-        `;
+          <tr class="hover:bg-gray-100">
+            <td class="py-2 px-3">${index + 1}</td>
+            <td class="py-2 px-3">${user.name}</td>
+            <td class="py-2 px-3">${user.total}</td>
+            <td class="py-2 px-3">${user.maths}</td>
+            <td class="py-2 px-3">${user.english}</td>
+            <td class="py-2 px-3">${user.reasoning}</td>
+            <td class="py-2 px-3">${user.gk}</td>
+            <td class="py-2 px-3">${user.date || "N/A"}</td>
+          </tr>`;
         tableBody.innerHTML += row;
       });
     }
