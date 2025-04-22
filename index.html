@@ -1,216 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
   <title>CGL Mock Test Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
-<body class="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100 transition duration-300">
-  <div class="max-w-5xl mx-auto p-6">
-    <h1 class="text-3xl font-bold text-center mb-6">📊 CGL Mock Test Tracker</h1>
+<body class="bg-gray-100 p-6">
 
-    <!-- Dark Mode Toggle -->
-    <div class="flex justify-end mb-4">
-      <button id="toggleDark" class="bg-black text-white px-4 py-1 rounded hover:bg-gray-800 transition">🌙 Toggle Dark Mode</button>
+  <div class="max-w-5xl mx-auto bg-white shadow-md p-6 rounded-lg">
+    <h1 class="text-2xl font-bold text-center mb-6">CGL Mock Test Tracker</h1>
+
+    <!-- Form -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+      <input id="name" type="text" placeholder="Name" class="border p-2 rounded" required>
+      <input id="maths" type="number" placeholder="Maths" class="border p-2 rounded" required>
+      <input id="english" type="number" placeholder="English" class="border p-2 rounded" required>
+      <input id="reasoning" type="number" placeholder="Reasoning" class="border p-2 rounded" required>
+      <input id="gk" type="number" placeholder="GK" class="border p-2 rounded" required>
+    </div>
+    <button onclick="submitData()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition mb-6">Submit</button>
+
+    <!-- Filters -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+      <input type="date" id="filterDate" class="border p-2 rounded">
+      <input type="text" id="filterName" placeholder="Filter by Name" class="border p-2 rounded">
     </div>
 
-    <!-- Form Section -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
-      <h2 class="text-xl font-semibold mb-4">Enter Your Test Marks</h2>
-      <form id="marksForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input type="text" id="name" placeholder="Your Name" required class="input-style">
-        <input type="number" id="maths" placeholder="Maths Marks" required class="input-style">
-        <input type="number" id="english" placeholder="English Marks" required class="input-style">
-        <input type="number" id="reasoning" placeholder="Reasoning Marks" required class="input-style">
-        <input type="number" id="gk" placeholder="GK Marks" required class="input-style">
-        <button type="submit" class="col-span-1 md:col-span-2 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">Submit</button>
-      </form>
+    <!-- Leaderboard -->
+    <div class="overflow-x-auto bg-gray-50 p-4 rounded-lg shadow-inner">
+      <table class="min-w-full border-collapse">
+        <thead>
+          <tr class="bg-blue-600 text-white">
+            <th class="p-2 border">Rank</th>
+            <th class="p-2 border">Name</th>
+            <th class="p-2 border">Maths</th>
+            <th class="p-2 border">English</th>
+            <th class="p-2 border">Reasoning</th>
+            <th class="p-2 border">GK</th>
+            <th class="p-2 border">Total</th>
+            <th class="p-2 border">Date</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard"></tbody>
+      </table>
     </div>
 
-    <!-- Filter Section -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
-      <h2 class="text-xl font-semibold mb-4">Filter Leaderboard</h2>
-      <div class="flex flex-col md:flex-row gap-4 items-center">
-        <input type="date" id="filterDate" class="input-style w-full md:w-auto">
-        <input type="text" id="filterName" placeholder="Filter by Name" class="input-style w-full md:w-auto">
-        <button id="applyFilter" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">Apply Filter</button>
-        <button id="clearFilter" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition">Clear</button>
-      </div>
-    </div>
-
-    <!-- Leaderboard Section -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold">Leaderboard</h2>
-        <button id="exportCSV" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">📥 Export as CSV</button>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm text-left">
-          <thead class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
-            <tr>
-              <th class="py-2 px-3">Rank</th>
-              <th class="py-2 px-3">Name</th>
-              <th class="py-2 px-3">Total</th>
-              <th class="py-2 px-3">Maths</th>
-              <th class="py-2 px-3">English</th>
-              <th class="py-2 px-3">Reasoning</th>
-              <th class="py-2 px-3">GK</th>
-              <th class="py-2 px-3">Date</th>
-            </tr>
-          </thead>
-          <tbody id="leaderboard" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"></tbody>
-        </table>
-      </div>
-      <div id="averages" class="mt-4 font-medium text-sm text-gray-600 dark:text-gray-300"></div>
+    <!-- Export PDF -->
+    <div class="mt-6 text-center">
+      <button id="exportPDF" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">📄 Export as PDF</button>
     </div>
   </div>
 
-  <style>
-    .input-style {
-      border: 1px solid #ccc;
-      border-radius: 0.5rem;
-      padding: 0.5rem;
-      width: 100%;
-      background-color: white;
-    }
-    .dark .input-style {
-      background-color: #1f2937;
-      color: white;
-      border-color: #4b5563;
-    }
-  </style>
+  <!-- Hidden PDF Export Section -->
+  <div id="pdfExportContent" class="hidden p-4 bg-white text-black">
+    <div class="text-center mb-4">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/SSC_India_Logo.svg/2560px-SSC_India_Logo.svg.png" alt="Logo" style="max-height: 60px; margin: auto;" />
+      <h2 class="text-2xl font-bold mt-2">CGL Mock Test Tracker</h2>
+      <p id="pdfDate" class="text-sm"></p>
+      <p id="pdfFilters" class="text-sm text-gray-600"></p>
+    </div>
+    <div id="pdfTable"></div>
+  </div>
 
-  <!-- Firebase Script -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
-
+  <!-- Firebase + Logic -->
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDJPCpAZWgGLbE7Rsh4NaIPDPwNXNkaDlQ",
       authDomain: "scorecard-93031.firebaseapp.com",
       databaseURL: "https://scorecard-93031-default-rtdb.firebaseio.com",
       projectId: "scorecard-93031",
-      storageBucket: "scorecard-93031.firebasestorage.app",
+      storageBucket: "scorecard-93031.appspot.com",
       messagingSenderId: "397775062722",
       appId: "1:397775062722:web:929072a4ab23f6ed87dd5b",
       measurementId: "G-69BF1TLDYG"
     };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const scoresRef = ref(db, "scores");
+    function submitData() {
+      const name = document.getElementById("name").value.trim();
+      const maths = +document.getElementById("maths").value;
+      const english = +document.getElementById("english").value;
+      const reasoning = +document.getElementById("reasoning").value;
+      const gk = +document.getElementById("gk").value;
+      if (!name) return alert("Enter name!");
 
-    const form = document.getElementById("marksForm");
-    const tableBody = document.getElementById("leaderboard");
-    const filterDate = document.getElementById("filterDate");
-    const filterName = document.getElementById("filterName");
-    const applyFilter = document.getElementById("applyFilter");
-    const clearFilter = document.getElementById("clearFilter");
-
-    let allScores = [];
-
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const name = form.name.value.trim();
-      const maths = +form.maths.value;
-      const english = +form.english.value;
-      const reasoning = +form.reasoning.value;
-      const gk = +form.gk.value;
       const total = maths + english + reasoning + gk;
-      const today = new Date().toISOString().split("T")[0];
-
-      push(scoresRef, { name, maths, english, reasoning, gk, total, date: today });
-      form.reset();
-    });
-
-    onValue(scoresRef, (snapshot) => {
-      const data = snapshot.val();
-      allScores = [];
-
-      for (let id in data) {
-        allScores.push(data[id]);
-      }
-
-      renderTable(allScores);
-    });
-
-    function renderTable(scores) {
-      scores.sort((a, b) => b.total - a.total);
-      tableBody.innerHTML = "";
-
-      let totalMaths = 0, totalEng = 0, totalRes = 0, totalGK = 0;
-
-      scores.forEach((user, index) => {
-        totalMaths += user.maths;
-        totalEng += user.english;
-        totalRes += user.reasoning;
-        totalGK += user.gk;
-
-        const row = `
-          <tr class="hover:bg-gray-100 dark:hover:bg-gray-700">
-            <td class="py-2 px-3">${index + 1}</td>
-            <td class="py-2 px-3">${user.name}</td>
-            <td class="py-2 px-3">${user.total}</td>
-            <td class="py-2 px-3">${user.maths}</td>
-            <td class="py-2 px-3">${user.english}</td>
-            <td class="py-2 px-3">${user.reasoning}</td>
-            <td class="py-2 px-3">${user.gk}</td>
-            <td class="py-2 px-3">${user.date || "N/A"}</td>
-          </tr>`;
-        tableBody.innerHTML += row;
-      });
-
-      const avg = scores.length > 0 ? {
-        maths: (totalMaths / scores.length).toFixed(2),
-        english: (totalEng / scores.length).toFixed(2),
-        reasoning: (totalRes / scores.length).toFixed(2),
-        gk: (totalGK / scores.length).toFixed(2)
-      } : { maths: 0, english: 0, reasoning: 0, gk: 0 };
-
-      document.getElementById("averages").innerText =
-        `📊 Averages → Maths: ${avg.maths}, English: ${avg.english}, Reasoning: ${avg.reasoning}, GK: ${avg.gk}`;
+      const date = new Date().toISOString().split("T")[0];
+      const id = Date.now();
+      db.ref("scores/" + id).set({ name, maths, english, reasoning, gk, total, date });
     }
 
-    applyFilter.addEventListener("click", () => {
-      let filtered = [...allScores];
-      const date = filterDate.value;
-      const name = filterName.value.trim().toLowerCase();
+    function loadLeaderboard() {
+      db.ref("scores").on("value", (snapshot) => {
+        const data = snapshot.val();
+        const tbody = document.getElementById("leaderboard");
+        tbody.innerHTML = "";
 
-      if (date) {
-        filtered = filtered.filter(entry => entry.date === date);
-      }
+        const filterDate = document.getElementById("filterDate").value;
+        const filterName = document.getElementById("filterName").value.toLowerCase();
 
-      if (name) {
-        filtered = filtered.filter(entry => entry.name.toLowerCase().includes(name));
-      }
+        let rows = [];
+        for (let id in data) {
+          const entry = data[id];
+          if (filterDate && entry.date !== filterDate) continue;
+          if (filterName && !entry.name.toLowerCase().includes(filterName)) continue;
+          rows.push(entry);
+        }
 
-      renderTable(filtered);
-    });
+        rows.sort((a, b) => b.total - a.total);
+        rows.forEach((row, i) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="border p-1 text-center">${i + 1}</td>
+            <td class="border p-1">${row.name}</td>
+            <td class="border p-1">${row.maths}</td>
+            <td class="border p-1">${row.english}</td>
+            <td class="border p-1">${row.reasoning}</td>
+            <td class="border p-1">${row.gk}</td>
+            <td class="border p-1 font-bold">${row.total}</td>
+            <td class="border p-1 text-sm">${row.date}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      });
+    }
 
-    clearFilter.addEventListener("click", () => {
-      filterDate.value = "";
-      filterName.value = "";
-      renderTable(allScores);
-    });
+    document.getElementById("filterDate").addEventListener("input", loadLeaderboard);
+    document.getElementById("filterName").addEventListener("input", loadLeaderboard);
+    loadLeaderboard();
 
-    document.getElementById("exportCSV").addEventListener("click", () => {
-      const rows = [
-        ["Rank", "Name", "Total", "Maths", "English", "Reasoning", "GK", "Date"],
-        ...allScores
-          .sort((a, b) => b.total - a.total)
-          .map((user, i) => [i+1, user.name, user.total, user.maths, user.english, user.reasoning, user.gk, user.date])
-      ];
-      const csv = rows.map(r => r.join(",")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "leaderboard.csv";
-      link.click();
-    });
+    // Export to PDF
+    document.getElementById("exportPDF").addEventListener("click", () => {
+      const now = new Date().toLocaleString();
+      const filterDateVal = document.getElementById("filterDate").value || "All Dates";
+      const filterNameVal = document.getElementById("filterName").value || "All Names";
 
-    document.getElementById("toggleDark").addEventListener("click", () => {
-      document.documentElement.classList.toggle("dark");
+      document.getElementById("pdfDate").innerText = `Generated on: ${now}`;
+      document.getElementById("pdfFilters").innerText = `Filters - Name: ${filterNameVal}, Date: ${filterDateVal}`;
+
+      const currentTable = document.querySelector(".overflow-x-auto").innerHTML;
+      document.getElementById("pdfTable").innerHTML = currentTable;
+
+      const exportArea = document.getElementById("pdfExportContent");
+      const opt = {
+        margin: 0.5,
+        filename: 'CGL_Mock_Leaderboard.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+      };
+      html2pdf().set(opt).from(exportArea).save();
     });
   </script>
 </body>
