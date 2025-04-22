@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CGL Mock Test Tracker</title>
+  <style>
+    table, th, td { border: 1px solid black; border-collapse: collapse; padding: 5px; }
+    input, button { margin: 4px 0; }
+  </style>
 </head>
 <body>
   <h1>CGL Mock Test Entry</h1>
@@ -17,41 +21,51 @@
     <button type="submit">Submit</button>
   </form>
 
+  <h2>Filter Leaderboard</h2>
+  <input type="date" id="filterDate">
+  <input type="text" id="filterName" placeholder="Filter by Name">
+  <button id="applyFilter">Apply Filter</button>
+  <button id="clearFilter">Clear</button>
+
   <h2>Leaderboard</h2>
-  <table border="1" id="leaderboard">
+  <table id="leaderboard">
     <thead>
       <tr>
-        <th>Name</th><th>Total</th><th>Maths</th><th>English</th><th>Reasoning</th><th>GK</th>
+        <th>Rank</th><th>Name</th><th>Total</th><th>Maths</th><th>English</th><th>Reasoning</th><th>GK</th><th>Date</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 
-  <!-- Firebase SDKs -->
+  <!-- Firebase SDK -->
   <script type="module">
-    // Import Firebase modules
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
     import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
 
-    // Replace these with your own Firebase project config
-   const firebaseConfig = {
-  apiKey: "AIzaSyDJPCpAZWgGLbE7Rsh4NaIPDPwNXNkaDlQ",
-  authDomain: "scorecard-93031.firebaseapp.com",
-  databaseURL: "https://scorecard-93031-default-rtdb.firebaseio.com",
-  projectId: "scorecard-93031",
-  storageBucket: "scorecard-93031.firebasestorage.app",
-  messagingSenderId: "397775062722",
-  appId: "1:397775062722:web:929072a4ab23f6ed87dd5b",
-  measurementId: "G-69BF1TLDYG"
-};
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJPCpAZWgGLbE7Rsh4NaIPDPwNXNkaDlQ",
+      authDomain: "scorecard-93031.firebaseapp.com",
+      databaseURL: "https://scorecard-93031-default-rtdb.firebaseio.com",
+      projectId: "scorecard-93031",
+      storageBucket: "scorecard-93031.firebasestorage.app",
+      messagingSenderId: "397775062722",
+      appId: "1:397775062722:web:929072a4ab23f6ed87dd5b",
+      measurementId: "G-69BF1TLDYG"
+    };
 
-
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const scoresRef = ref(db, "scores");
 
-    // Handle form submission
     const form = document.getElementById("marksForm");
+    const tableBody = document.querySelector("#leaderboard tbody");
+    const filterDate = document.getElementById("filterDate");
+    const filterName = document.getElementById("filterName");
+    const applyFilter = document.getElementById("applyFilter");
+    const clearFilter = document.getElementById("clearFilter");
+
+    let allScores = [];
+
     form.addEventListener("submit", (e) => {
       e.preventDefault();
 
@@ -61,41 +75,64 @@
       const reasoning = +form.reasoning.value;
       const gk = +form.gk.value;
       const total = maths + english + reasoning + gk;
+      const today = new Date().toISOString().split("T")[0];
 
-      const scoresRef = ref(db, "scores");
-      push(scoresRef, { name, maths, english, reasoning, gk, total });
-
+      push(scoresRef, { name, maths, english, reasoning, gk, total, date: today });
       form.reset();
     });
 
-    // Display leaderboard
-    const tableBody = document.querySelector("#leaderboard tbody");
-    const scoresRef = ref(db, "scores");
-
     onValue(scoresRef, (snapshot) => {
       const data = snapshot.val();
-      const scores = [];
+      allScores = [];
 
       for (let id in data) {
-        scores.push(data[id]);
+        allScores.push(data[id]);
       }
 
-      scores.sort((a, b) => b.total - a.total);
+      renderTable(allScores);
+    });
 
+    function renderTable(scores) {
+      scores.sort((a, b) => b.total - a.total);
       tableBody.innerHTML = "";
-      scores.forEach((user) => {
+
+      scores.forEach((user, index) => {
         const row = `
           <tr>
+            <td>${index + 1}</td>
             <td>${user.name}</td>
             <td>${user.total}</td>
             <td>${user.maths}</td>
             <td>${user.english}</td>
             <td>${user.reasoning}</td>
             <td>${user.gk}</td>
+            <td>${user.date || "N/A"}</td>
           </tr>
         `;
         tableBody.innerHTML += row;
       });
+    }
+
+    applyFilter.addEventListener("click", () => {
+      let filtered = [...allScores];
+      const date = filterDate.value;
+      const name = filterName.value.trim().toLowerCase();
+
+      if (date) {
+        filtered = filtered.filter(entry => entry.date === date);
+      }
+
+      if (name) {
+        filtered = filtered.filter(entry => entry.name.toLowerCase().includes(name));
+      }
+
+      renderTable(filtered);
+    });
+
+    clearFilter.addEventListener("click", () => {
+      filterDate.value = "";
+      filterName.value = "";
+      renderTable(allScores);
     });
   </script>
 </body>
