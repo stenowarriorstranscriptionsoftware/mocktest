@@ -7,12 +7,11 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-gray-100 p-6">
 
-  <div class="max-w-6xl mx-auto bg-white shadow-md p-6 rounded-lg">
+  <div class="max-w-5xl mx-auto bg-white shadow-md p-6 rounded-lg">
     <h1 class="text-2xl font-bold text-center mb-6">CGL Mock Test Tracker</h1>
 
     <!-- Form -->
@@ -30,35 +29,6 @@
       <button onclick="clearForm()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition flex items-center gap-2">
         <i class="fas fa-eraser"></i> Clear
       </button>
-    </div>
-
-    <!-- Accuracy Analysis Section -->
-    <div id="accuracyAnalysis" class="hidden mb-8 p-4 bg-blue-50 rounded-lg">
-      <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
-        <i class="fas fa-brain text-blue-600"></i> Section-wise Accuracy Analysis
-      </h2>
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-white p-4 rounded shadow">
-          <h3 class="font-semibold mb-2">Maths Accuracy</h3>
-          <canvas id="mathsAccuracyChart"></canvas>
-          <p id="mathsAccuracyText" class="text-center mt-2 text-sm"></p>
-        </div>
-        <div class="bg-white p-4 rounded shadow">
-          <h3 class="font-semibold mb-2">English Accuracy</h3>
-          <canvas id="englishAccuracyChart"></canvas>
-          <p id="englishAccuracyText" class="text-center mt-2 text-sm"></p>
-        </div>
-        <div class="bg-white p-4 rounded shadow">
-          <h3 class="font-semibold mb-2">Reasoning Accuracy</h3>
-          <canvas id="reasoningAccuracyChart"></canvas>
-          <p id="reasoningAccuracyText" class="text-center mt-2 text-sm"></p>
-        </div>
-        <div class="bg-white p-4 rounded shadow">
-          <h3 class="font-semibold mb-2">GK Accuracy</h3>
-          <canvas id="gkAccuracyChart"></canvas>
-          <p id="gkAccuracyText" class="text-center mt-2 text-sm"></p>
-        </div>
-      </div>
     </div>
 
     <!-- Filters -->
@@ -104,7 +74,6 @@
             <th class="p-2 border">Total</th>
             <th class="p-2 border">%ile</th>
             <th class="p-2 border">Date</th>
-            <th class="p-2 border">Actions</th>
           </tr>
         </thead>
         <tbody id="leaderboard"></tbody>
@@ -220,93 +189,12 @@
         });
     }
 
-    // Delete Record from Firebase
-    function deleteRecord(id) {
-      if (confirm("Are you sure you want to delete this record?")) {
-        showLoading();
-        db.ref("scores/" + id).remove()
-          .then(() => {
-            hideLoading();
-            alert("Record deleted successfully!");
-          })
-          .catch(error => {
-            hideLoading();
-            alert("Error deleting record: " + error.message);
-          });
-      }
-    }
-
     // Get Badge Icon for Rank
     function getRankBadge(rank) {
       if (rank === 1) return '<i class="fas fa-trophy text-yellow-500" title="1st Rank"></i>';
       if (rank === 2) return '<i class="fas fa-medal text-gray-400" title="2nd Rank"></i>';
       if (rank === 3) return '<i class="fas fa-medal text-amber-600" title="3rd Rank"></i>';
       return '';
-    }
-
-    // Create Accuracy Chart
-    function createAccuracyChart(ctx, accuracy, sectionName) {
-      const incorrect = 100 - accuracy;
-      return new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Correct', 'Incorrect'],
-          datasets: [{
-            data: [accuracy, incorrect],
-            backgroundColor: ['#4CAF50', '#F44336'],
-            borderWidth: 0
-          }]
-        },
-        options: {
-          cutout: '70%',
-          plugins: {
-            legend: { display: false },
-            tooltip: { enabled: false }
-          },
-          animation: { animateScale: true }
-        }
-      });
-    }
-
-    // Update Accuracy Analysis Section
-    function updateAccuracyAnalysis(rows) {
-      if (rows.length === 0) {
-        document.getElementById('accuracyAnalysis').classList.add('hidden');
-        return;
-      }
-
-      document.getElementById('accuracyAnalysis').classList.remove('hidden');
-
-      // Calculate average accuracy for each section (max score 50)
-      const mathsAvg = rows.reduce((sum, row) => sum + row.maths, 0) / rows.length;
-      const englishAvg = rows.reduce((sum, row) => sum + row.english, 0) / rows.length;
-      const reasoningAvg = rows.reduce((sum, row) => sum + row.reasoning, 0) / rows.length;
-      const gkAvg = rows.reduce((sum, row) => sum + row.gk, 0) / rows.length;
-
-      // Convert to percentage
-      const mathsAccuracy = (mathsAvg / 50 * 100).toFixed(1);
-      const englishAccuracy = (englishAvg / 50 * 100).toFixed(1);
-      const reasoningAccuracy = (reasoningAvg / 50 * 100).toFixed(1);
-      const gkAccuracy = (gkAvg / 50 * 100).toFixed(1);
-
-      // Update accuracy text
-      document.getElementById('mathsAccuracyText').textContent = `${mathsAccuracy}% Accuracy`;
-      document.getElementById('englishAccuracyText').textContent = `${englishAccuracy}% Accuracy`;
-      document.getElementById('reasoningAccuracyText').textContent = `${reasoningAccuracy}% Accuracy`;
-      document.getElementById('gkAccuracyText').textContent = `${gkAccuracy}% Accuracy`;
-
-      // Destroy previous charts if they exist
-      ['maths', 'english', 'reasoning', 'gk'].forEach(section => {
-        const chartId = `${section}AccuracyChart`;
-        const chartInstance = Chart.getChart(chartId);
-        if (chartInstance) chartInstance.destroy();
-      });
-
-      // Create new charts
-      createAccuracyChart(document.getElementById('mathsAccuracyChart'), mathsAccuracy, 'Maths');
-      createAccuracyChart(document.getElementById('englishAccuracyChart'), englishAccuracy, 'English');
-      createAccuracyChart(document.getElementById('reasoningAccuracyChart'), reasoningAccuracy, 'Reasoning');
-      createAccuracyChart(document.getElementById('gkAccuracyChart'), gkAccuracy, 'GK');
     }
 
     // Load Leaderboard Data
@@ -338,9 +226,6 @@
           totals.gk += entry.gk;
           totals.count++;
         }
-
-        // Update accuracy analysis
-        updateAccuracyAnalysis(rows);
 
         // Show/hide stats based on data
         const statsDiv = document.getElementById("stats");
@@ -387,11 +272,6 @@
             <td class="border p-1 text-center font-bold">${row.total}</td>
             <td class="border p-1 text-center">${row.percentile}%</td>
             <td class="border p-1 text-center text-sm">${row.date}</td>
-            <td class="border p-1 text-center">
-              <button onclick="deleteRecord('${row.id}')" class="text-red-500 hover:text-red-700">
-                <i class="fas fa-trash-alt"></i>
-              </button>
-            </td>
           `;
           tbody.appendChild(tr);
         });
@@ -408,7 +288,6 @@
             <td class="border p-1 text-center">${(totals.reasoning/rows.length).toFixed(1)}</td>
             <td class="border p-1 text-center">${(totals.gk/rows.length).toFixed(1)}</td>
             <td class="border p-1 text-center">${((totals.maths + totals.english + totals.reasoning + totals.gk)/rows.length).toFixed(1)}</td>
-            <td class="border p-1 text-center">-</td>
             <td class="border p-1 text-center">-</td>
             <td class="border p-1 text-center">-</td>
           `;
@@ -436,14 +315,8 @@
         document.getElementById("pdfStats").innerHTML = statsDiv.innerHTML;
       }
 
-      // Clone table for PDF (without action buttons)
+      // Clone table for PDF
       const currentTable = document.querySelector(".overflow-x-auto table").cloneNode(true);
-      const actionCol = currentTable.querySelector("th:nth-child(10)");
-      if (actionCol) actionCol.remove();
-
-      const actionCells = currentTable.querySelectorAll("td:nth-child(10)");
-      actionCells.forEach(cell => cell.remove());
-
       document.getElementById("pdfTable").innerHTML = "";
       document.getElementById("pdfTable").appendChild(currentTable);
 
