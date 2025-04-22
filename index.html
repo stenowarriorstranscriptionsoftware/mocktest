@@ -7,6 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-gray-100 p-6">
 
@@ -16,21 +17,51 @@
     <!-- Form -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
       <input id="name" type="text" placeholder="Name" class="border p-2 rounded" required>
-      <input id="maths" type="number" placeholder="Maths" class="border p-2 rounded" required>
-      <input id="english" type="number" placeholder="English" class="border p-2 rounded" required>
-      <input id="reasoning" type="number" placeholder="Reasoning" class="border p-2 rounded" required>
-      <input id="gk" type="number" placeholder="GK" class="border p-2 rounded" required>
+      <input id="maths" type="number" placeholder="Maths (0-50)" class="border p-2 rounded" min="0" max="50" required>
+      <input id="english" type="number" placeholder="English (0-50)" class="border p-2 rounded" min="0" max="50" required>
+      <input id="reasoning" type="number" placeholder="Reasoning (0-50)" class="border p-2 rounded" min="0" max="50" required>
+      <input id="gk" type="number" placeholder="GK (0-50)" class="border p-2 rounded" min="0" max="50" required>
     </div>
-    <button onclick="submitData()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition mb-6">Submit</button>
+    <div class="flex gap-4 mb-6">
+      <button onclick="submitData()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition flex items-center gap-2">
+        <i class="fas fa-paper-plane"></i> Submit
+      </button>
+      <button onclick="clearForm()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition flex items-center gap-2">
+        <i class="fas fa-eraser"></i> Clear
+      </button>
+    </div>
 
     <!-- Filters -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
       <input type="date" id="filterDate" class="border p-2 rounded">
       <input type="text" id="filterName" placeholder="Filter by Name" class="border p-2 rounded">
+      <button onclick="resetFilters()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition flex items-center justify-center gap-2">
+        <i class="fas fa-filter-circle-xmark"></i> Reset Filters
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div id="stats" class="hidden grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 p-4 bg-blue-50 rounded-lg">
+      <div class="bg-white p-3 rounded shadow">
+        <h3 class="font-bold text-blue-600">Participants</h3>
+        <p id="participantsCount" class="text-2xl">0</p>
+      </div>
+      <div class="bg-white p-3 rounded shadow">
+        <h3 class="font-bold text-blue-600">Highest Score</h3>
+        <p id="highestScore" class="text-2xl">0</p>
+      </div>
+      <div class="bg-white p-3 rounded shadow">
+        <h3 class="font-bold text-blue-600">Average Score</h3>
+        <p id="averageScore" class="text-2xl">0</p>
+      </div>
+      <div class="bg-white p-3 rounded shadow">
+        <h3 class="font-bold text-blue-600">Test Date Range</h3>
+        <p id="dateRange" class="text-sm">-</p>
+      </div>
     </div>
 
     <!-- Leaderboard -->
-    <div class="overflow-x-auto bg-gray-50 p-4 rounded-lg shadow-inner">
+    <div class="overflow-x-auto bg-gray-50 p-4 rounded-lg shadow-inner mb-4">
       <table class="min-w-full border-collapse">
         <thead>
           <tr class="bg-blue-600 text-white">
@@ -41,16 +72,20 @@
             <th class="p-2 border">Reasoning</th>
             <th class="p-2 border">GK</th>
             <th class="p-2 border">Total</th>
+            <th class="p-2 border">%ile</th>
             <th class="p-2 border">Date</th>
+            <th class="p-2 border">Actions</th>
           </tr>
         </thead>
         <tbody id="leaderboard"></tbody>
       </table>
     </div>
 
-    <!-- Export PDF -->
-    <div class="mt-6 text-center">
-      <button id="exportPDF" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">📄 Export as PDF</button>
+    <!-- Export Options -->
+    <div class="mt-6 text-center space-x-4">
+      <button id="exportPDF" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition flex items-center gap-2 mx-auto">
+        <i class="fas fa-file-pdf"></i> Export as PDF
+      </button>
     </div>
   </div>
 
@@ -62,7 +97,16 @@
       <p id="pdfDate" class="text-sm"></p>
       <p id="pdfFilters" class="text-sm text-gray-600"></p>
     </div>
+    <div id="pdfStats" class="grid grid-cols-4 gap-4 mb-4"></div>
     <div id="pdfTable"></div>
+  </div>
+
+  <!-- Loading Modal -->
+  <div id="loadingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white p-6 rounded-lg shadow-xl text-center">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      <p class="text-lg font-semibold">Processing...</p>
+    </div>
   </div>
 
   <!-- Firebase + Logic -->
@@ -80,21 +124,85 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    function showLoading() {
+      document.getElementById('loadingModal').classList.remove('hidden');
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingModal').classList.add('hidden');
+    }
+
+    function clearForm() {
+      document.getElementById("name").value = "";
+      document.getElementById("maths").value = "";
+      document.getElementById("english").value = "";
+      document.getElementById("reasoning").value = "";
+      document.getElementById("gk").value = "";
+    }
+
+    function resetFilters() {
+      document.getElementById("filterDate").value = "";
+      document.getElementById("filterName").value = "";
+      loadLeaderboard();
+    }
+
     function submitData() {
       const name = document.getElementById("name").value.trim();
       const maths = +document.getElementById("maths").value;
       const english = +document.getElementById("english").value;
       const reasoning = +document.getElementById("reasoning").value;
       const gk = +document.getElementById("gk").value;
-      if (!name) return alert("Enter name!");
+      
+      if (!name) {
+        alert("Please enter your name!");
+        return;
+      }
+
+      if (maths < 0 || maths > 50 || english < 0 || english > 50 || 
+          reasoning < 0 || reasoning > 50 || gk < 0 || gk > 50) {
+        alert("Scores must be between 0-50 for each section!");
+        return;
+      }
+
+      if (!confirm(`Submit scores for ${name}?\nMaths: ${maths}, English: ${english}, Reasoning: ${reasoning}, GK: ${gk}\nTotal: ${maths + english + reasoning + gk}`)) {
+        return;
+      }
+
+      showLoading();
 
       const total = maths + english + reasoning + gk;
       const date = new Date().toISOString().split("T")[0];
       const id = Date.now();
-      db.ref("scores/" + id).set({ name, maths, english, reasoning, gk, total, date });
+      
+      db.ref("scores/" + id).set({ name, maths, english, reasoning, gk, total, date })
+        .then(() => {
+          hideLoading();
+          clearForm();
+          alert("Scores submitted successfully!");
+        })
+        .catch(error => {
+          hideLoading();
+          alert("Error submitting scores: " + error.message);
+        });
+    }
+
+    function deleteRecord(id) {
+      if (confirm("Are you sure you want to delete this record?")) {
+        showLoading();
+        db.ref("scores/" + id).remove()
+          .then(() => {
+            hideLoading();
+            alert("Record deleted successfully!");
+          })
+          .catch(error => {
+            hideLoading();
+            alert("Error deleting record: " + error.message);
+          });
+      }
     }
 
     function loadLeaderboard() {
+      showLoading();
       db.ref("scores").on("value", (snapshot) => {
         const data = snapshot.val();
         const tbody = document.getElementById("leaderboard");
@@ -104,28 +212,97 @@
         const filterName = document.getElementById("filterName").value.toLowerCase();
 
         let rows = [];
+        let allDates = [];
+        let totals = { maths: 0, english: 0, reasoning: 0, gk: 0, count: 0 };
+        
         for (let id in data) {
           const entry = data[id];
           if (filterDate && entry.date !== filterDate) continue;
           if (filterName && !entry.name.toLowerCase().includes(filterName)) continue;
-          rows.push(entry);
+          
+          rows.push({ ...entry, id });
+          allDates.push(entry.date);
+          
+          // Calculate totals for averages
+          totals.maths += entry.maths;
+          totals.english += entry.english;
+          totals.reasoning += entry.reasoning;
+          totals.gk += entry.gk;
+          totals.count++;
         }
 
-        rows.sort((a, b) => b.total - a.total);
+        // Show/hide stats based on data
+        const statsDiv = document.getElementById("stats");
+        if (rows.length > 0) {
+          statsDiv.classList.remove("hidden");
+        } else {
+          statsDiv.classList.add("hidden");
+        }
+
+        // Calculate stats
+        if (rows.length > 0) {
+          rows.sort((a, b) => b.total - a.total);
+          
+          // Calculate percentiles
+          rows.forEach((row, index) => {
+            row.percentile = ((rows.length - index) / rows.length * 100).toFixed(1);
+          });
+
+          // Update stats display
+          document.getElementById("participantsCount").textContent = rows.length;
+          document.getElementById("highestScore").textContent = rows[0].total;
+          document.getElementById("averageScore").textContent = (totals.maths + totals.english + totals.reasoning + totals.gk) / rows.length;
+          
+          // Find date range
+          const uniqueDates = [...new Set(allDates)].sort();
+          const dateRangeText = uniqueDates.length === 1 ? uniqueDates[0] : 
+                              `${uniqueDates[0]} to ${uniqueDates[uniqueDates.length - 1]}`;
+          document.getElementById("dateRange").textContent = dateRangeText;
+        }
+
+        // Populate table
         rows.forEach((row, i) => {
           const tr = document.createElement("tr");
+          tr.className = i % 2 === 0 ? "bg-white" : "bg-gray-50";
           tr.innerHTML = `
             <td class="border p-1 text-center">${i + 1}</td>
-            <td class="border p-1">${row.name}</td>
-            <td class="border p-1">${row.maths}</td>
-            <td class="border p-1">${row.english}</td>
-            <td class="border p-1">${row.reasoning}</td>
-            <td class="border p-1">${row.gk}</td>
-            <td class="border p-1 font-bold">${row.total}</td>
-            <td class="border p-1 text-sm">${row.date}</td>
+            <td class="border p-1 font-medium">${row.name}</td>
+            <td class="border p-1 text-center">${row.maths}</td>
+            <td class="border p-1 text-center">${row.english}</td>
+            <td class="border p-1 text-center">${row.reasoning}</td>
+            <td class="border p-1 text-center">${row.gk}</td>
+            <td class="border p-1 text-center font-bold">${row.total}</td>
+            <td class="border p-1 text-center">${row.percentile}%</td>
+            <td class="border p-1 text-center text-sm">${row.date}</td>
+            <td class="border p-1 text-center">
+              <button onclick="deleteRecord('${row.id}')" class="text-red-500 hover:text-red-700">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </td>
           `;
           tbody.appendChild(tr);
         });
+
+        // Add average row
+        if (rows.length > 0) {
+          const avgRow = document.createElement("tr");
+          avgRow.className = "bg-blue-100 font-bold";
+          avgRow.innerHTML = `
+            <td class="border p-1 text-center">AVG</td>
+            <td class="border p-1"></td>
+            <td class="border p-1 text-center">${(totals.maths/rows.length).toFixed(1)}</td>
+            <td class="border p-1 text-center">${(totals.english/rows.length).toFixed(1)}</td>
+            <td class="border p-1 text-center">${(totals.reasoning/rows.length).toFixed(1)}</td>
+            <td class="border p-1 text-center">${(totals.gk/rows.length).toFixed(1)}</td>
+            <td class="border p-1 text-center">${((totals.maths + totals.english + totals.reasoning + totals.gk)/rows.length).toFixed(1)}</td>
+            <td class="border p-1 text-center">-</td>
+            <td class="border p-1 text-center">-</td>
+            <td class="border p-1 text-center">-</td>
+          `;
+          tbody.appendChild(avgRow);
+        }
+
+        hideLoading();
       });
     }
 
@@ -135,6 +312,8 @@
 
     // Export to PDF
     document.getElementById("exportPDF").addEventListener("click", () => {
+      showLoading();
+      
       const now = new Date().toLocaleString();
       const filterDateVal = document.getElementById("filterDate").value || "All Dates";
       const filterNameVal = document.getElementById("filterName").value || "All Names";
@@ -142,8 +321,22 @@
       document.getElementById("pdfDate").innerText = `Generated on: ${now}`;
       document.getElementById("pdfFilters").innerText = `Filters - Name: ${filterNameVal}, Date: ${filterDateVal}`;
 
-      const currentTable = document.querySelector(".overflow-x-auto").innerHTML;
-      document.getElementById("pdfTable").innerHTML = currentTable;
+      // Clone stats for PDF
+      const statsDiv = document.getElementById("stats");
+      if (statsDiv) {
+        document.getElementById("pdfStats").innerHTML = statsDiv.innerHTML;
+      }
+
+      // Clone table for PDF (without action buttons)
+      const currentTable = document.querySelector(".overflow-x-auto table").cloneNode(true);
+      const actionCol = currentTable.querySelector("th:nth-child(10)");
+      if (actionCol) actionCol.remove();
+      
+      const actionCells = currentTable.querySelectorAll("td:nth-child(10)");
+      actionCells.forEach(cell => cell.remove());
+      
+      document.getElementById("pdfTable").innerHTML = "";
+      document.getElementById("pdfTable").appendChild(currentTable);
 
       const exportArea = document.getElementById("pdfExportContent");
       const opt = {
@@ -153,7 +346,12 @@
         html2canvas: { scale: 2 },
         jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
       };
-      html2pdf().set(opt).from(exportArea).save();
+      
+      setTimeout(() => {
+        html2pdf().set(opt).from(exportArea).save().then(() => {
+          hideLoading();
+        });
+      }, 500);
     });
   </script>
 </body>
