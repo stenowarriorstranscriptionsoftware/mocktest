@@ -6,12 +6,17 @@
   <title>CGL Mock Test Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100 transition duration-300">
   <div class="max-w-5xl mx-auto p-6">
-    <h1 class="text-3xl font-bold text-center mb-8">📊 CGL Mock Test Tracker</h1>
+    <h1 class="text-3xl font-bold text-center mb-6">📊 CGL Mock Test Tracker</h1>
+
+    <!-- Dark Mode Toggle -->
+    <div class="flex justify-end mb-4">
+      <button id="toggleDark" class="bg-black text-white px-4 py-1 rounded hover:bg-gray-800 transition">🌙 Toggle Dark Mode</button>
+    </div>
 
     <!-- Form Section -->
-    <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
       <h2 class="text-xl font-semibold mb-4">Enter Your Test Marks</h2>
       <form id="marksForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <input type="text" id="name" placeholder="Your Name" required class="input-style">
@@ -24,7 +29,7 @@
     </div>
 
     <!-- Filter Section -->
-    <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
       <h2 class="text-xl font-semibold mb-4">Filter Leaderboard</h2>
       <div class="flex flex-col md:flex-row gap-4 items-center">
         <input type="date" id="filterDate" class="input-style w-full md:w-auto">
@@ -35,11 +40,14 @@
     </div>
 
     <!-- Leaderboard Section -->
-    <div class="bg-white rounded-xl shadow-md p-6">
-      <h2 class="text-xl font-semibold mb-4">Leaderboard</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Leaderboard</h2>
+        <button id="exportCSV" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">📥 Export as CSV</button>
+      </div>
       <div class="overflow-x-auto">
         <table class="min-w-full text-sm text-left">
-          <thead class="bg-gray-200 text-gray-700">
+          <thead class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
             <tr>
               <th class="py-2 px-3">Rank</th>
               <th class="py-2 px-3">Name</th>
@@ -51,9 +59,10 @@
               <th class="py-2 px-3">Date</th>
             </tr>
           </thead>
-          <tbody id="leaderboard" class="bg-white divide-y divide-gray-200"></tbody>
+          <tbody id="leaderboard" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"></tbody>
         </table>
       </div>
+      <div id="averages" class="mt-4 font-medium text-sm text-gray-600 dark:text-gray-300"></div>
     </div>
   </div>
 
@@ -63,6 +72,12 @@
       border-radius: 0.5rem;
       padding: 0.5rem;
       width: 100%;
+      background-color: white;
+    }
+    .dark .input-style {
+      background-color: #1f2937;
+      color: white;
+      border-color: #4b5563;
     }
   </style>
 
@@ -124,9 +139,16 @@
       scores.sort((a, b) => b.total - a.total);
       tableBody.innerHTML = "";
 
+      let totalMaths = 0, totalEng = 0, totalRes = 0, totalGK = 0;
+
       scores.forEach((user, index) => {
+        totalMaths += user.maths;
+        totalEng += user.english;
+        totalRes += user.reasoning;
+        totalGK += user.gk;
+
         const row = `
-          <tr class="hover:bg-gray-100">
+          <tr class="hover:bg-gray-100 dark:hover:bg-gray-700">
             <td class="py-2 px-3">${index + 1}</td>
             <td class="py-2 px-3">${user.name}</td>
             <td class="py-2 px-3">${user.total}</td>
@@ -138,6 +160,16 @@
           </tr>`;
         tableBody.innerHTML += row;
       });
+
+      const avg = scores.length > 0 ? {
+        maths: (totalMaths / scores.length).toFixed(2),
+        english: (totalEng / scores.length).toFixed(2),
+        reasoning: (totalRes / scores.length).toFixed(2),
+        gk: (totalGK / scores.length).toFixed(2)
+      } : { maths: 0, english: 0, reasoning: 0, gk: 0 };
+
+      document.getElementById("averages").innerText =
+        `📊 Averages → Maths: ${avg.maths}, English: ${avg.english}, Reasoning: ${avg.reasoning}, GK: ${avg.gk}`;
     }
 
     applyFilter.addEventListener("click", () => {
@@ -160,6 +192,25 @@
       filterDate.value = "";
       filterName.value = "";
       renderTable(allScores);
+    });
+
+    document.getElementById("exportCSV").addEventListener("click", () => {
+      const rows = [
+        ["Rank", "Name", "Total", "Maths", "English", "Reasoning", "GK", "Date"],
+        ...allScores
+          .sort((a, b) => b.total - a.total)
+          .map((user, i) => [i+1, user.name, user.total, user.maths, user.english, user.reasoning, user.gk, user.date])
+      ];
+      const csv = rows.map(r => r.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "leaderboard.csv";
+      link.click();
+    });
+
+    document.getElementById("toggleDark").addEventListener("click", () => {
+      document.documentElement.classList.toggle("dark");
     });
   </script>
 </body>
