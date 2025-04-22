@@ -330,7 +330,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, set, query, orderByChild, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getFirestore, collection, addDoc, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDJPCpAZWgGLbE7Rsh4NaIPDPwNXNkaDlQ",
@@ -343,7 +343,7 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    const db = getFirestore(app);
     const form = document.getElementById('mockForm');
     const leaderboard = document.getElementById('leaderboard');
     const filterBtn = document.getElementById('filterBtn');
@@ -370,48 +370,50 @@
       const total = maths + english + reasoning + gk;
       const timestamp = new Date().getTime();
 
-      const newTestRef = push(ref(db, 'mockTests'));
-      await set(newTestRef, {
-        name, 
-        testName, 
-        testDate, 
-        maths, 
-        english, 
-        reasoning, 
-        gk, 
-        total, 
-        timestamp
-      });
-
-      form.reset();
-      showToast('Result submitted successfully!', 'success');
-      loadLeaderboard();
+      try {
+        await addDoc(collection(db, 'mockTests'), {
+          name, 
+          testName, 
+          testDate, 
+          maths, 
+          english, 
+          reasoning, 
+          gk, 
+          total, 
+          timestamp
+        });
+        form.reset();
+        showToast('Result submitted successfully!', 'success');
+        loadLeaderboard();
+      } catch (error) {
+        showToast('Error submitting result: ' + error.message, 'error');
+      }
     });
 
     async function loadLeaderboard(testDate = null, testName = null) {
       leaderboard.innerHTML = "<tr><th>Rank</th><th>Name</th><th>Test Name</th><th>Test Date</th><th>Maths</th><th>English</th><th>Reasoning</th><th>GK</th><th>Total</th></tr>";
 
-      let dbQuery = query(ref(db, 'mockTests'), orderByChild('total'));
+      try {
+        let q = query(collection(db, 'mockTests'), orderBy('total', 'desc'));
+        
+        // Apply filters
+        if (testDate) {
+          q = query(q, where('testDate', '==', testDate));
+        }
+        if (testName) {
+          // Firestore doesn't support partial string matching, so we'll filter client-side
+        }
 
-      onValue(dbQuery, (snapshot) => {
+        const querySnapshot = await getDocs(q);
         const tests = [];
-        snapshot.forEach((childSnapshot) => {
-          const d = childSnapshot.val();
-          tests.push(d);
+        querySnapshot.forEach((doc) => {
+          tests.push(doc.data());
         });
 
-        tests.sort((a, b) => b.total - a.total);
-
-        const filteredTests = tests.filter(test => {
-          let include = true;
-          if (testDate) {
-            include = include && (test.testDate === testDate);
-          }
-          if (testName) {
-            include = include && (test.testName.toLowerCase().includes(testName.toLowerCase()));
-          }
-          return include;
-        });
+        // Apply client-side filtering for testName (since Firestore doesn't support contains)
+        const filteredTests = testName 
+          ? tests.filter(test => test.testName.toLowerCase().includes(testName.toLowerCase()))
+          : tests;
 
         let rank = 1;
         filteredTests.forEach((d) => {
@@ -428,7 +430,9 @@
             <td>${d.total}</td>
           </tr>`;
         });
-      });
+      } catch (error) {
+        showToast('Error loading leaderboard: ' + error.message, 'error');
+      }
     }
 
     filterBtn.addEventListener('click', () => {
