@@ -8,6 +8,29 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    #pdfExportContent {
+      width: 100%;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    #pdfExportContent table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #pdfExportContent th, #pdfExportContent td {
+      padding: 8px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    #pdfExportContent th {
+      background-color: #2563eb;
+      color: white;
+    }
+    #pdfStatsContainer {
+      margin-bottom: 20px;
+    }
+  </style>
 </head>
 <body class="bg-gray-100 p-6">
 
@@ -89,16 +112,7 @@
   </div>
 
   <!-- Hidden PDF Export Section -->
-  <div id="pdfExportContent" class="hidden p-4 bg-white text-black">
-    <div class="text-center mb-4">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/SSC_India_Logo.svg/2560px-SSC_India_Logo.svg.png" alt="Logo" style="max-height: 60px; margin: auto;" />
-      <h2 class="text-2xl font-bold mt-2">CGL Mock Test Tracker</h2>
-      <p id="pdfDate" class="text-sm"></p>
-      <p id="pdfFilters" class="text-sm text-gray-600"></p>
-    </div>
-    <div id="pdfStats" class="grid grid-cols-4 gap-4 mb-4"></div>
-    <div id="pdfTable"></div>
-  </div>
+  <div id="pdfExportContent" class="hidden"></div>
 
   <!-- Loading Modal -->
   <div id="loadingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
@@ -298,42 +312,75 @@
       });
     }
 
-    // Export to PDF
-    document.getElementById("exportPDF").addEventListener("click", () => {
+    // Export to PDF - Fixed Version
+    document.getElementById("exportPDF").addEventListener("click", async () => {
       showLoading();
 
-      const now = new Date().toLocaleString();
-      const filterDateVal = document.getElementById("filterDate").value || "All Dates";
-      const filterNameVal = document.getElementById("filterName").value || "All Names";
+      try {
+        // 1. Prepare metadata
+        const now = new Date().toLocaleString();
+        const filterDate = document.getElementById("filterDate").value;
+        const filterName = document.getElementById("filterName").value;
+        
+        const filters = [
+          filterDate ? `Date: ${filterDate}` : null,
+          filterName ? `Name: ${filterName}` : null
+        ].filter(Boolean).join(", ") || "No filters applied";
 
-      document.getElementById("pdfDate").innerText = `Generated on: ${now}`;
-      document.getElementById("pdfFilters").innerText = `Filters - Name: ${filterNameVal}, Date: ${filterDateVal}`;
+        // 2. Clone the visible table
+        const originalTable = document.querySelector(".overflow-x-auto table");
+        const tableClone = originalTable.cloneNode(true);
+        
+        // 3. Prepare the PDF container
+        const pdfExport = document.getElementById("pdfExportContent");
+        pdfExport.innerHTML = `
+          <div class="text-center mb-4">
+            <h2 class="text-2xl font-bold">CGL Mock Test Leaderboard</h2>
+            <p class="text-sm">Generated on: ${now}</p>
+            <p class="text-sm text-gray-600">Filters: ${filters}</p>
+          </div>
+          <div id="pdfStatsContainer"></div>
+          <div id="pdfTableContainer"></div>
+        `;
 
-      // Clone stats for PDF
-      const statsDiv = document.getElementById("stats");
-      if (statsDiv) {
-        document.getElementById("pdfStats").innerHTML = statsDiv.innerHTML;
+        // 4. Add stats if visible
+        const statsDiv = document.getElementById("stats");
+        if (statsDiv && !statsDiv.classList.contains("hidden")) {
+          const statsClone = statsDiv.cloneNode(true);
+          statsClone.classList.remove("hidden");
+          document.getElementById("pdfStatsContainer").appendChild(statsClone);
+        }
+
+        // 5. Add the table
+        document.getElementById("pdfTableContainer").appendChild(tableClone);
+
+        // 6. PDF options
+        const options = {
+          margin: [10, 10, 10, 10],
+          filename: `CGL_Leaderboard_${new Date().toISOString().slice(0, 10)}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { 
+            scale: 2,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: document.getElementById("pdfExportContent").scrollWidth
+          },
+          jsPDF: { 
+            unit: 'mm',
+            format: 'a4',
+            orientation: 'landscape'
+          }
+        };
+
+        // 7. Generate PDF
+        await html2pdf().set(options).from(pdfExport).save();
+        
+      } catch (error) {
+        console.error("PDF Export Error:", error);
+        alert("Error generating PDF. See console for details.");
+      } finally {
+        hideLoading();
       }
-
-      // Clone table for PDF
-      const currentTable = document.querySelector(".overflow-x-auto table").cloneNode(true);
-      document.getElementById("pdfTable").innerHTML = "";
-      document.getElementById("pdfTable").appendChild(currentTable);
-
-      const exportArea = document.getElementById("pdfExportContent");
-      const opt = {
-        margin: 0.5,
-        filename: 'CGL_Mock_Leaderboard.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
-      };
-
-      setTimeout(() => {
-        html2pdf().set(opt).from(exportArea).save().then(() => {
-          hideLoading();
-        });
-      }, 500);
     });
 
     // Event Listeners for Filters
